@@ -9,6 +9,8 @@ do
         "delta",
     }
 
+    local MIN_MATCH_COUNT = 4
+
     local function getExecutorNames()
         local candidates = {}
         pcall(function()
@@ -38,21 +40,22 @@ do
     end
 
     local names = getExecutorNames()
-    local isWhitelisted = false
     local detectedName = (names[1] and tostring(names[1])) or "Unknown"
+
+    local matchCount = 0
+    local seen = {}
 
     for _, name in ipairs(names) do
         local lowerName = string.lower(tostring(name))
         for _, good in ipairs(EXECUTOR_WHITELIST) do
-            if string.find(lowerName, good, 1, true) then
-                isWhitelisted = true
-                break
+            if not seen[good] and string.find(lowerName, good, 1, true) then
+                seen[good] = true
+                matchCount = matchCount + 1
             end
         end
-        if isWhitelisted then break end
     end
 
-    if not isWhitelisted then
+    if matchCount < MIN_MATCH_COUNT then
         local Players = game:GetService("Players")
         local LP = Players.LocalPlayer
 
