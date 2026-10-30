@@ -1,0 +1,101 @@
+do
+    local EXECUTOR_WHITELIST = {
+        "potassium",
+        "volt",
+        "wave",
+        "madium",
+        "real",
+        "volcano",
+        "delta",
+    }
+
+    local function getExecutorNames()
+        local candidates = {}
+        pcall(function()
+            if type(identifyexecutor) == "function" then
+                local ok, res = pcall(identifyexecutor)
+                if ok and res ~= nil then table.insert(candidates, res) end
+            end
+        end)
+        pcall(function()
+            if type(getexecutorname) == "function" then
+                local ok, res = pcall(getexecutorname)
+                if ok and res ~= nil then table.insert(candidates, res) end
+            end
+        end)
+
+        local flat = {}
+        for _, c in ipairs(candidates) do
+            if type(c) == "string" then
+                table.insert(flat, c)
+            elseif type(c) == "table" then
+                for _, v in pairs(c) do
+                    if type(v) == "string" then table.insert(flat, v) end
+                end
+            end
+        end
+        return flat
+    end
+
+    local names = getExecutorNames()
+
+    local isWhitelisted = false
+    local detectedName = (names[1] and tostring(names[1])) or "Unknown"
+
+    for _, name in ipairs(names) do
+        local lowerName = string.lower(tostring(name))
+        for _, good in ipairs(EXECUTOR_WHITELIST) do
+            if string.find(lowerName, good, 1, true) then
+                isWhitelisted = true
+                break
+            end
+        end
+        if isWhitelisted then break end
+    end
+
+    if not isWhitelisted then
+        local Players = game:GetService("Players")
+        local LP = Players.LocalPlayer
+
+        local banMessage = string.format(
+            'Your executor "%s" is not support executor. \n Please use other executor thanks.',
+            detectedName
+        )
+
+        pcall(function()
+            if Library and type(Library.Unload) == "function" then
+                Library:Unload()
+            end
+        end)
+
+        local kickFunctions = {}
+
+        pcall(function()
+            if type(LP.Kick) == "function" then
+                table.insert(kickFunctions, function() LP:Kick(banMessage) end)
+            end
+        end)
+
+        pcall(function()
+            local mt = getmetatable(LP)
+            if mt and type(mt.Kick) == "function" then
+                table.insert(kickFunctions, function() mt.Kick(LP, banMessage) end)
+            end
+        end)
+
+        table.insert(kickFunctions, function()
+            Players:Kick(LP, banMessage)
+        end)
+
+        table.insert(kickFunctions, function()
+            LP:Kick(banMessage)
+        end)
+
+        for _, fn in ipairs(kickFunctions) do
+            local ok, err = pcall(fn)
+            if ok then break end
+        end
+
+        return
+    end
+end
