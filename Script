@@ -38,7 +38,6 @@ do
     end
 
     local names = getExecutorNames()
-
     local isWhitelisted = false
     local detectedName = (names[1] and tostring(names[1])) or "Unknown"
 
@@ -96,6 +95,6 @@ do
             if ok then break end
         end
 
-        return
+        error("VE_BANNED", 0)
     end
 end
